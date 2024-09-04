@@ -230,18 +230,24 @@ public extension OpenAIProtocol {
     func audioTranscriptions(
         query: AudioTranscriptionQuery
     ) async throws -> AudioTranscriptionResult {
-        try await withCheckedThrowingContinuation { continuation in
-            audioTranscriptions(query: query) { result in
-                switch result {
-                case let .success(success):
-                    return continuation.resume(returning: success)
-                case let .failure(failure):
-                    return continuation.resume(throwing: failure)
+        var dataTask: URLSessionDataTask?
+
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                dataTask = audioTranscriptions(query: query) { result in
+                    switch result {
+                    case let .success(success):
+                        return continuation.resume(returning: success)
+                    case let .failure(failure):
+                        return continuation.resume(throwing: failure)
+                    }
                 }
             }
+        } onCancel: { [dataTask] in
+            dataTask?.cancel()
         }
     }
-    
+
     func audioTranslations(
         query: AudioTranslationQuery
     ) async throws -> AudioTranslationResult {

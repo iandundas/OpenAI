@@ -116,7 +116,7 @@ final public class OpenAI: OpenAIProtocol {
         performRequest(request: JSONRequest<ModerationsResult>(body: query, url: buildURL(path: .moderations)), completion: completion)
     }
     
-    public func audioTranscriptions(query: AudioTranscriptionQuery, completion: @escaping (Result<AudioTranscriptionResult, Error>) -> Void) {
+    public func audioTranscriptions(query: AudioTranscriptionQuery, completion: @escaping (Result<AudioTranscriptionResult, Error>) -> Void) -> URLSessionDataTask? {
         performRequest(request: MultipartFormDataRequest<AudioTranscriptionResult>(body: query, url: buildURL(path: .audioTranscriptions)), completion: completion)
     }
     
@@ -132,7 +132,8 @@ final public class OpenAI: OpenAIProtocol {
 
 extension OpenAI {
 
-    func performRequest<ResultType: Codable>(request: any URLRequestBuildable, completion: @escaping (Result<ResultType, Error>) -> Void) {
+    @discardableResult
+    func performRequest<ResultType: Codable>(request: any URLRequestBuildable, completion: @escaping (Result<ResultType, Error>) -> Void) -> URLSessionDataTask? {
         do {
             let request = try request.build(token: configuration.token, 
                                             organizationIdentifier: configuration.organizationIdentifier,
@@ -151,9 +152,12 @@ extension OpenAI {
                     completion(.failure((try? decoder.decode(APIErrorResponse.self, from: data)) ?? error))
                 }
             }
+
             task.resume()
+            return task as? URLSessionDataTask
         } catch {
             completion(.failure(error))
+            return nil
         }
     }
     
