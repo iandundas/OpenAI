@@ -230,11 +230,11 @@ public extension OpenAIProtocol {
     func audioTranscriptions(
         query: AudioTranscriptionQuery
     ) async throws -> AudioTranscriptionResult {
-        var dataTask: URLSessionDataTask?
+        let cancellable = LocalCancellable()
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
-                dataTask = audioTranscriptions(query: query) { result in
+                let dataTask = audioTranscriptions(query: query) { result in
                     switch result {
                     case let .success(success):
                         return continuation.resume(returning: success)
@@ -242,9 +242,10 @@ public extension OpenAIProtocol {
                         return continuation.resume(throwing: failure)
                     }
                 }
+                cancellable.dataTask = dataTask 
             }
-        } onCancel: { [dataTask] in
-            dataTask?.cancel()
+        } onCancel: {
+            cancellable.dataTask?.cancel()
         }
     }
 
@@ -262,4 +263,10 @@ public extension OpenAIProtocol {
             }
         }
     }
+}
+
+/// Exists to allow calling `.cancel()` on dataTask without causing synchronous code error in the Task cancellation callback
+fileprivate class LocalCancellable {
+    var dataTask: URLSessionDataTask?
+    init(){}
 }
