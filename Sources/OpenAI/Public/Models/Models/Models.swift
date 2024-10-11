@@ -109,6 +109,7 @@ public extension Model {
     // Transcriptions / Translations
     
     static let whisper_1 = "whisper-1"
+    static let whisper_large_v3 = "whisper-large-v3" // only supported on Groq right now.
 
     // Image Generation
     static let dall_e_2 = "dall-e-2"
