@@ -102,7 +102,7 @@ extension AudioTranscriptionQuery: MultipartFormDataBodyEncodable {
         ]
         
         timestampGranularities.forEach { granularity in
-            entries.append(.string(paramName: "timestamp_granularity[]", value: granularity.rawValue))
+            entries.append(.string(paramName: "timestamp_granularities[]", value: granularity.rawValue))
         }
         
         let bodyBuilder = MultipartFormDataBodyBuilder(boundary: boundary, entries: entries)
