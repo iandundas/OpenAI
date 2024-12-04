@@ -14,12 +14,21 @@ public struct AudioTranscriptionResult: Codable, Equatable {
     public let language: String?
     public let duration: Double
     public let segments: [AudioTranscriptionSegment]?
+    public let words: [AudioTranscriptionWord]?
 }
 
 public struct AudioTranscriptionSegment: Codable, Equatable {
 
     /// The transcribed text.
     public let text: String
+    public let start: Double
+    public let end: Double
+}
+
+public struct AudioTranscriptionWord: Codable, Equatable {
+
+    /// The transcribed text.
+    public let word: String
     public let start: Double
     public let end: Double
 }
