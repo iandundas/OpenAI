@@ -9,13 +9,18 @@ import Foundation
 
 public struct AudioTranscriptionQuery: Codable {
 
-public enum ResponseFormat: String, Codable, Equatable, CaseIterable {
-    case json
-    case text
-    case verboseJson = "verbose_json"
-    case srt
-    case vtt
-}
+    public enum ResponseFormat: String, Codable, Equatable, CaseIterable {
+        case json
+        case text
+        case verboseJson = "verbose_json"
+        case srt
+        case vtt
+    }
+    
+    public enum TimestampGranularity: String, Codable, Equatable, CaseIterable {
+        case word
+        case segment
+    }
 
     /// The audio file object (not file name) to transcribe, in one of these formats: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
     public let file: Data
@@ -33,8 +38,11 @@ public enum ResponseFormat: String, Codable, Equatable, CaseIterable {
     /// The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency.
     /// https://platform.openai.com/docs/guides/speech-to-text/prompting
     public let language: String?
+    
+    // https://platform.openai.com/docs/guides/speech-to-text
+    public let timestampGranularities: [TimestampGranularity]
 
-    public init(file: Data, fileType: Self.FileType, model: Model, prompt: String? = nil, temperature: Double? = nil, language: String? = nil, responseFormat: Self.ResponseFormat? = nil) {
+    public init(file: Data, fileType: Self.FileType, model: Model, prompt: String? = nil, temperature: Double? = nil, language: String? = nil, responseFormat: Self.ResponseFormat? = nil, timestampGranularities: [TimestampGranularity] = [.segment]) {
         self.file = file
         self.fileType = fileType
         self.model = model
@@ -42,6 +50,7 @@ public enum ResponseFormat: String, Codable, Equatable, CaseIterable {
         self.temperature = temperature
         self.language = language
         self.responseFormat = responseFormat
+        self.timestampGranularities = timestampGranularities
     }
 
     public enum FileType: String, Codable, Equatable, CaseIterable {
@@ -82,14 +91,21 @@ public enum ResponseFormat: String, Codable, Equatable, CaseIterable {
 extension AudioTranscriptionQuery: MultipartFormDataBodyEncodable {
     
     func encode(boundary: String) -> Data {
-        let bodyBuilder = MultipartFormDataBodyBuilder(boundary: boundary, entries: [
+        
+        var entries: [MultipartFormDataEntry] = [
             .file(paramName: "file", fileName: fileType.fileName, fileData: file, contentType: fileType.contentType),
             .string(paramName: "model", value: model),
             .string(paramName: "prompt", value: prompt),
             .string(paramName: "temperature", value: temperature),
             .string(paramName: "language", value: language),
             .string(paramName: "response_format", value: responseFormat?.rawValue)
-        ])
+        ]
+        
+        timestampGranularities.forEach { granularity in
+            entries.append(.string(paramName: "timestamp_granularity[]", value: granularity.rawValue))
+        }
+        
+        let bodyBuilder = MultipartFormDataBodyBuilder(boundary: boundary, entries: entries)
         return bodyBuilder.build()
     }
 }
